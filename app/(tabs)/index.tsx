@@ -1,74 +1,111 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+// app/(tabs)/index.tsx
+'use client';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, FAB, List, Avatar } from 'react-native-paper';
+import { useRouter } from 'expo-router';
+import { useStore } from '../store/store';
+import { format } from 'date-fns';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+ const router = useRouter();
+ const { transactions, friends } = useStore();
+ const recentTransactions = transactions.slice(0, 5);
+ const recentFriends = friends.filter(f => f.recentActivity);
+
+ const totalBalance = friends.reduce((sum, friend) => sum + friend.balance, 0);
+
+ return (
+   <View style={styles.container}>
+     <ScrollView>
+       <Card style={styles.balanceCard}>
+         <Card.Content>
+           <Text variant="titleLarge">Total Balance</Text>
+           <Text variant="displaySmall" style={totalBalance >= 0 ? styles.positive : styles.negative}>
+             ${Math.abs(totalBalance).toFixed(2)}
+           </Text>
+         </Card.Content>
+       </Card>
+
+       <Text variant="titleMedium" style={styles.sectionTitle}>Recent Activity</Text>
+       {recentTransactions.map(transaction => (
+         <List.Item
+           key={transaction.id}
+           title={transaction.description}
+           description={format(transaction.date, 'MMM d, yyyy')}
+           left={props => (
+             <Avatar.Text 
+               {...props} 
+               label={transaction.paidBy.name[0]} 
+               size={40}
+             />
+           )}
+           right={() => (
+             <Text 
+               variant="bodyLarge"
+               style={styles.amount}
+             >
+               ${transaction.amount.toFixed(2)}
+             </Text>
+           )}
+         />
+       ))}
+
+       <Text variant="titleMedium" style={styles.sectionTitle}>Recent Friends</Text>
+       {recentFriends.map(friend => (
+         <List.Item
+           key={friend.id}
+           title={friend.name}
+           description={`Balance: $${Math.abs(friend.balance).toFixed(2)}`}
+           left={props => (
+             <Avatar.Text 
+               {...props} 
+               label={friend.name[0]} 
+               size={40}
+             />
+           )}
+         />
+       ))}
+     </ScrollView>
+     
+     <FAB
+       icon="plus"
+       style={styles.fab}
+       onPress={() => router.push('/add-expense')}
+       color="#fff"
+     />
+   </View>
+ );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+ container: {
+   flex: 1,
+   backgroundColor: '#fff',
+ },
+ balanceCard: {
+   margin: 16,
+   backgroundColor: '#f8fafc',
+ },
+ sectionTitle: {
+   padding: 16,
+   paddingBottom: 8,
+ },
+ amount: {
+   alignSelf: 'center',
+   fontWeight: '600',
+ },
+ positive: {
+   color: '#16a34a',
+ },
+ negative: {
+   color: '#dc2626',
+ },
+ fab: {
+   position: 'absolute',
+   margin: 16,
+   right: 0,
+   bottom: 0,
+   backgroundColor: '#6366f1',
+ },
 });
